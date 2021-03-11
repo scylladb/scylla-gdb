@@ -1,0 +1,63 @@
+#!/bin/sh
+
+PRODUCT=scylla
+VERSION=$(gdb --version|head -1|cut -d ' ' -f 5|sed -e "s/-[0-9]*\.fc[0-9]*//")
+
+if test -f version
+then
+	SCYLLA_VERSION=$(cat version | awk -F'-' '{print $1}')
+	SCYLLA_RELEASE=$(cat version | awk -F'-' '{print $2}')
+else
+	DATE=$(date +%Y%m%d)
+	GIT_COMMIT=$(git log --pretty=format:'%h' -n 1)
+	SCYLLA_VERSION=$VERSION
+	# For custom package builds, replace "0" with "counter.your_name",
+	# where counter starts at 1 and increments for successive versions.
+	# This ensures that the package manager will select your custom
+	# package over the standard release.
+	SCYLLA_BUILD=0
+	SCYLLA_RELEASE=$SCYLLA_BUILD.$DATE.$GIT_COMMIT
+fi
+
+if [ -f build/SCYLLA-RELEASE-FILE ]; then
+	RELEASE_FILE=$(cat build/SCYLLA-RELEASE-FILE)
+	GIT_COMMIT_FILE=$(cat build/SCYLLA-RELEASE-FILE |cut -d . -f 3)
+	if [ "$GIT_COMMIT" = "$GIT_COMMIT_FILE" ]; then
+		exit 0
+	fi
+fi
+
+
+usage() {
+    echo "usage: $0"
+    echo "           [--version product-version-release]          # override p-v-r"
+    exit 1
+}
+
+OVERRIDE=
+while [[ $# > 0 ]]; do
+    case "$1" in
+	--version)
+	    OVERRIDE="$2"
+	    shift 2
+	    ;;
+	*)
+	    usage
+	    ;;
+    esac
+done
+
+if [[ -n "$OVERRIDE" ]]; then
+    # regular expression for p-v-r: alphabetic+dashes for product, trailing non-dashes
+    # for release, everything else for version
+    RE='^([-a-z]+)-(.+)-([^-]+)$'
+    PRODUCT="$(sed -E "s/$RE/\\1/" <<<"$OVERRIDE")"
+    SCYLLA_VERSION="$(sed -E "s/$RE/\\2/" <<<"$OVERRIDE")"
+    SCYLLA_RELEASE="$(sed -E "s/$RE/\\3/" <<<"$OVERRIDE")"
+fi
+
+echo "$SCYLLA_VERSION-$SCYLLA_RELEASE"
+mkdir -p build
+echo "$SCYLLA_VERSION" > build/SCYLLA-VERSION-FILE
+echo "$SCYLLA_RELEASE" > build/SCYLLA-RELEASE-FILE
+echo "$PRODUCT" > build/SCYLLA-PRODUCT-FILE
