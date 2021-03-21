@@ -20,5 +20,11 @@
 # along with Scylla.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+. /etc/os-release
 
-# TODO: move python dependencies from scylla main repo
+if [ "$ID" != "fedora" ]; then
+    echo "Unsupported Distribution: $ID"
+    exit 1
+fi
+
+dnf install -y gdb
