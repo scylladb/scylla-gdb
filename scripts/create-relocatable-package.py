@@ -163,7 +163,6 @@ ar.reloc_add('build/debian/debian', arcname='debian')
 ar.reloc_add('/usr/lib64/gconv', arcname='gconv')
 ar.reloc_add('/usr/share/guile', arcname='guile')
 ar.reloc_add('/usr/share/gdb', arcname='gdb')
-ar.reloc_add('scylla-gdb.py')
 
 # Complete the tar output, and wait for the gzip process to complete
 ar.close()
